@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,9 +10,13 @@ namespace WebCrawler
     public class CrawlWorker
     {
         public CrawlWorker(
+            WebGraph graph,
+            int queueSize,
             IHyperlinkFinder hyperlinkFinder,
             IPageDownload pageDownloader)
         {
+            _graph = graph;
+            _queueSize = queueSize;
             _hyperlinkFinder = hyperlinkFinder;
             _pageDownloader = pageDownloader;
             _linksQueue = new Queue<string>();
@@ -37,15 +40,25 @@ namespace WebCrawler
 
         private async Task process()
         {
-            string link = _linksQueue.Dequeue();
-
-            string pageContents = await _pageDownloader.GetPageContentsAsync(link);
-
-            string[] foundLinks = _hyperlinkFinder.GetHyperlinks(pageContents).ToArray();
-
-
+            if (_linksQueue.Count > 0)
+            {
+                var link = _linksQueue.Dequeue();
+                var pageContents = await _pageDownloader.GetPageContentsAsync(link).ConfigureAwait(false);
+                var foundLinks = _hyperlinkFinder.GetHyperlinks(link, pageContents);
+                _graph.AddNodes(link, foundLinks);
+            }
+            else
+            {
+                var newLinks = _graph.GetLinksBatch(_queueSize);
+                foreach (var newLink in newLinks)
+                {
+                    _linksQueue.Enqueue(newLink);
+                }
+            }
         }
 
+        private readonly WebGraph _graph;
+        private readonly int _queueSize;
         private readonly IHyperlinkFinder _hyperlinkFinder;
         private readonly IPageDownload _pageDownloader;
         private readonly Queue<string> _linksQueue;

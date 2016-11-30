@@ -35,15 +35,31 @@ namespace WebCrawler
         }
 
         /// <summary>
-        /// Url
+        /// Mark the node as processed
+        /// </summary>
+        public void MarkAsProcessed()
+        {
+            IsProcessed = true;
+        }
+
+        /// <summary>
+        /// Url, encapsulated in the node
         /// </summary>
         public string Url { get; }
 
         /// <summary>
-        /// 
+        /// Children of node
         /// </summary>
         public HashSet<string> Children { get; }
 
+        /// <summary>
+        /// Parents of node
+        /// </summary>
         public HashSet<string> Parents { get; }
+
+        /// <summary>
+        /// Flag to show if the search was performed from this node
+        /// </summary>
+        public bool IsProcessed { get; private set; }
     }
 }

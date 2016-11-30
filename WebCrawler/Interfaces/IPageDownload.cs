@@ -11,6 +11,7 @@ namespace WebCrawler
         /// Asynchronously get page contents in a string representation
         /// </summary>
         /// <param name="url">Url to download a page from</param>
+        /// <remarks>Returns empty string, if any exception got raised</remarks>
         Task<string> GetPageContentsAsync(string url);
     }
 }

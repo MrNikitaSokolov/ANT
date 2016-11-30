@@ -10,7 +10,8 @@ namespace WebCrawler
         /// <summary>
         /// Get all hyperlinks in page
         /// </summary>
+        /// <param name="baseUrl">BaseUrl</param>
         /// <param name="pageContents">Contents of the page to search for hyperlinks</param>
-        IReadOnlyCollection<string> GetHyperlinks(string pageContents);
+        IReadOnlyCollection<string> GetHyperlinks(string baseUrl, string pageContents);
     }
 }

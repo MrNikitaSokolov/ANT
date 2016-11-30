@@ -17,37 +17,62 @@ namespace WebCrawler
         }
 
         /// <summary>
-        /// Add node to the web graph
+        /// Add nodes to the web graph
         /// </summary>
         /// <param name="parentUrl">Url of the parent</param>
-        /// <param name="url">Url of the node</param>
-        public void AddNode(string parentUrl, string url)
+        /// <param name="childUrls">Child urls of the node</param>
+        public void AddNodes(string parentUrl, IReadOnlyCollection<string> childUrls)
         {
-            WebGraphNode foundNode;
-            if (_nodesByUrl.TryGetValue(url, out foundNode))
+            lock (_obj)
             {
-                foundNode.AddParent(parentUrl);
-            }
-            else
-            {
-                _nodesByUrl.Add(url, new WebGraphNode(url, parentUrl));
-            }
+                WebGraphNode parentNode;
+                // Parent must be in a graph
+                if (!_nodesByUrl.TryGetValue(parentUrl, out parentNode))
+                    throw new InvalidOperationException();
 
-            // Parent must be in a graph
-            if (!_nodesByUrl.TryGetValue(parentUrl, out foundNode))
-                throw new InvalidOperationException();
-            foundNode.AddChild(url);
+                parentNode.MarkAsProcessed();
+
+                foreach (var childUrl in childUrls)
+                {
+                    parentNode.AddChild(childUrl);
+
+                    WebGraphNode foundNode;
+                    if (_nodesByUrl.TryGetValue(childUrl, out foundNode))
+                    {
+                        foundNode.AddParent(parentUrl);
+                    }
+                    else
+                    {
+                        _nodesByUrl.Add(childUrl, new WebGraphNode(childUrl, parentUrl));
+                    }
+                }
+            }
         }
 
         /// <summary>
         /// Get all nodes of web graph
         /// </summary>
-        /// <returns></returns>
         public IReadOnlyCollection<WebGraphNode> GetAllNodes()
         {
             return _nodesByUrl.Values.ToArray();
         }
 
+        /// <summary>
+        /// Get a batch of links of unprocessed nodes
+        /// </summary>
+        public IReadOnlyCollection<string> GetLinksBatch(int batchSize)
+        {
+            lock (_obj)
+            {
+                return _nodesByUrl.Values
+                    .Where(n => !n.IsProcessed)
+                    .Take(batchSize)
+                    .Select(n => n.Url)
+                    .ToArray();
+            }
+        }
+
         private readonly Dictionary<string, WebGraphNode> _nodesByUrl;
+        private static readonly object _obj = new object();
     }
 }

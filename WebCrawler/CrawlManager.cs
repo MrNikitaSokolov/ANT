@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 namespace WebCrawler
@@ -11,11 +12,16 @@ namespace WebCrawler
         /// <summary>
         /// ctor
         /// </summary>
+        /// <param name="seedUrls">Seed urls to start crawling</param>
         /// <param name="numberOfWorkers">Number of working crawlers</param>
-        public CrawlManager(int numberOfWorkers)
+        /// <param name="workerQueueSize"></param>
+        public CrawlManager(IReadOnlyCollection<string> seedUrls, int numberOfWorkers, int workerQueueSize)
         {
+            _graph = new WebGraph(seedUrls);
             _workers = Enumerable.Repeat(
                 new CrawlWorker(
+                    _graph,
+                    workerQueueSize,
                     new HtmlAgilityPackHyperlinkFinder(),
                     new DefaultPageDownload()),
                 numberOfWorkers).ToArray();
@@ -46,5 +52,6 @@ namespace WebCrawler
 
         private readonly CrawlWorker[] _workers;
         private CancellationTokenSource _cancelToken;
+        private readonly WebGraph _graph;
     }
 }

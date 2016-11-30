@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace WebCrawler
@@ -6,13 +7,19 @@ namespace WebCrawler
     /// <summary>
     /// Default implementation of IPageDownload
     /// </summary>
-    class DefaultPageDownload : IPageDownload
+    public class DefaultPageDownload : IPageDownload
     {
         public async Task<string> GetPageContentsAsync(string url)
         {
-            return await _webClient.DownloadStringTaskAsync(url).ConfigureAwait(false);
+            using (var webClient = new WebClient())
+            try
+            {
+                return await webClient.DownloadStringTaskAsync(url).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
         }
-
-        private static readonly WebClient _webClient = new WebClient();
     }
 }
