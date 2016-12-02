@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,28 +34,38 @@ namespace WebCrawler
                 {
                     if (token.IsCancellationRequested)
                         return;
-                    await process().ConfigureAwait(false);
+
+                    await crawlIteration().ConfigureAwait(false);
                 }
             }, token).ConfigureAwait(false);
         }
 
-        private async Task process()
+        private async Task crawlIteration()
         {
-            if (_linksQueue.Count > 0)
+            string link;
+            if (tryGetNewLink(out link))
             {
-                var link = _linksQueue.Dequeue();
                 var pageContents = await _pageDownloader.GetPageContentsAsync(link).ConfigureAwait(false);
                 var foundLinks = _hyperlinkFinder.GetHyperlinks(link, pageContents);
                 _graph.AddNodes(link, foundLinks);
             }
-            else
+        }
+
+        private bool tryGetNewLink(out string link)
+        {
+            if (_linksQueue.Any())
             {
-                var newLinks = _graph.GetLinksBatch(_queueSize);
-                foreach (var newLink in newLinks)
-                {
-                    _linksQueue.Enqueue(newLink);
-                }
+                link = _linksQueue.Dequeue();
+                return true;
             }
+
+            link = null;
+            var newLinks = _graph.GetLinksBatch(_queueSize);
+            foreach (var newLink in newLinks)
+            {
+                _linksQueue.Enqueue(newLink);
+            }
+            return false;
         }
 
         private readonly WebGraph _graph;

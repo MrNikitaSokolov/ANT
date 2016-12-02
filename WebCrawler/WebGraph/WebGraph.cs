@@ -17,6 +17,12 @@ namespace WebCrawler
         }
 
         /// <summary>
+        /// Event notifying on a node being added to the graph
+        /// </summary>
+        public event NodeAddedEventHandler NodeAdded;
+        public delegate void NodeAddedEventHandler(object sender, WebGraphNodesCount e);
+
+        /// <summary>
         /// Add nodes to the web graph
         /// </summary>
         /// <param name="parentUrl">Url of the parent</param>
@@ -44,6 +50,7 @@ namespace WebCrawler
                     else
                     {
                         _nodesByUrl.Add(childUrl, new WebGraphNode(childUrl, parentUrl));
+                        NodeAdded?.Invoke(this, new WebGraphNodesCount(_nodesByUrl.Count));
                     }
                 }
             }

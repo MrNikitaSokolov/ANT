@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+  <title>Network | Basic usage</title>
+
+  <script type="text/javascript" src="vis.js"></script>
+  <link href="vis-network.min.css" rel="stylesheet" type="text/css" />
+
+  <script src="nodes.json"></script>
+  <script src="edges.json"></script>
+
+  <style type="text/css">
+    #mynetwork {
+      width: 1500px;
+      height: 800px;
+      border: 1px solid lightgray;
+    }
+  </style>
+</head>
+<body>
+
+<p>
+  Create a simple network with some nodes and edges.
+</p>
+
+
+<div id="mynetwork">
+</div>
+
+<script type="text/javascript">
+
+  var nodes = new vis.DataSet(nodes);
+  var edges = new vis.DataSet(edges);
+
+  // create a network
+  var container = document.getElementById('mynetwork');
+  var data = {
+    nodes: nodes,
+    edges: edges
+  };
+  var options = {
+    physics: {
+      enabled: false,
+    },
+    layout: {
+      improvedLayout:false
+    },
+    nodes: {
+        shape: 'dot',
+        scaling: {
+          min: 10,
+          max: 30
+        },
+        font: {
+          size: 8,
+          face: 'Tahoma'
+        }
+      }
+  }
+
+  var network = new vis.Network(container, data, options);
+</script>
+
+</body>
+</html>
