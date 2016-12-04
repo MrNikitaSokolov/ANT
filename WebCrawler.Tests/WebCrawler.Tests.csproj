@@ -52,6 +52,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="PageDownloadTest.cs" />
+    <Compile Include="WebGraphDiameterTest.cs" />
     <Compile Include="WebGraphTest.cs" />
     <Compile Include="HyperlinkFinderTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

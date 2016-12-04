@@ -11,7 +11,7 @@ namespace WebCrawler
     {
         public WebGraph(IReadOnlyCollection<string> seedUrls)
         {
-            _nodesByUrl = seedUrls
+            NodesByUrl = seedUrls
                 .Select(url => new WebGraphNode(url))
                 .ToDictionary(n => n.Url);
         }
@@ -20,7 +20,7 @@ namespace WebCrawler
         /// Event notifying on a node being added to the graph
         /// </summary>
         public event NodeAddedEventHandler NodeAdded;
-        public delegate void NodeAddedEventHandler(object sender, WebGraphNodesCount e);
+        public delegate void NodeAddedEventHandler(object sender, EventArgs e);
 
         /// <summary>
         /// Add nodes to the web graph
@@ -33,7 +33,7 @@ namespace WebCrawler
             {
                 WebGraphNode parentNode;
                 // Parent must be in a graph
-                if (!_nodesByUrl.TryGetValue(parentUrl, out parentNode))
+                if (!NodesByUrl.TryGetValue(parentUrl, out parentNode))
                     throw new InvalidOperationException();
 
                 parentNode.MarkAsProcessed();
@@ -43,26 +43,20 @@ namespace WebCrawler
                     parentNode.AddChild(childUrl);
 
                     WebGraphNode foundNode;
-                    if (_nodesByUrl.TryGetValue(childUrl, out foundNode))
+                    if (NodesByUrl.TryGetValue(childUrl, out foundNode))
                     {
                         foundNode.AddParent(parentUrl);
                     }
                     else
                     {
-                        _nodesByUrl.Add(childUrl, new WebGraphNode(childUrl, parentUrl));
-                        NodeAdded?.Invoke(this, new WebGraphNodesCount(_nodesByUrl.Count));
+                        NodesByUrl.Add(childUrl, new WebGraphNode(childUrl, parentUrl));
+                        NodeAdded?.Invoke(this, EventArgs.Empty);
                     }
                 }
             }
         }
 
-        /// <summary>
-        /// Get all nodes of web graph
-        /// </summary>
-        public IReadOnlyCollection<WebGraphNode> GetAllNodes()
-        {
-            return _nodesByUrl.Values.ToArray();
-        }
+        public Dictionary<string, WebGraphNode> NodesByUrl { get; }
 
         /// <summary>
         /// Get a batch of links of unprocessed nodes
@@ -71,7 +65,7 @@ namespace WebCrawler
         {
             lock (_obj)
             {
-                return _nodesByUrl.Values
+                return NodesByUrl.Values
                     .Where(n => !n.IsProcessed)
                     .Take(batchSize)
                     .Select(n => n.Url)
@@ -79,7 +73,6 @@ namespace WebCrawler
             }
         }
 
-        private readonly Dictionary<string, WebGraphNode> _nodesByUrl;
         private static readonly object _obj = new object();
     }
 }

@@ -54,8 +54,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Algorithms\FloydWarshallDiameter.cs" />
+    <Compile Include="Algorithms\TarjanStronglyConnectedComponents.cs" />
     <Compile Include="CrawlPrimitives\CrawlManager.cs" />
     <Compile Include="CrawlPrimitives\CrawlWorker.cs" />
+    <Compile Include="Interfaces\IDiameterFinder.cs" />
+    <Compile Include="Interfaces\IStronglyConnectedComponentsFinder.cs" />
     <Compile Include="WebGraph\WebGraph.cs" />
     <Compile Include="WebGraph\WebGraphNode.cs" />
     <Compile Include="Implementations\DefaultPageDownload.cs" />
@@ -64,10 +68,11 @@
     <Compile Include="Interfaces\IPageDownload.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="WebGraph\WebGraphNodesCount.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

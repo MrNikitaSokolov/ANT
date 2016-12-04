@@ -10,7 +10,7 @@ namespace WebCrawler.Tests
         public void CreateWebGraph_OneSeedUrl_ReturnsOneNodeWithNoChildren()
         {
             var graph = new WebGraph(new[] {"url1"});
-            var nodes = graph.GetAllNodes();
+            var nodes = graph.NodesByUrl.Values;
             Assert.AreEqual(1, nodes.Count);
 
             var singleNode = nodes.Single();
@@ -24,7 +24,7 @@ namespace WebCrawler.Tests
             var graph = new WebGraph(new[] { "url1" });
             graph.AddNodes("url1", new[] { "url2" });
 
-            var nodes = graph.GetAllNodes();
+            var nodes = graph.NodesByUrl.Values;
             Assert.AreEqual(2, nodes.Count);
 
             var firstNode = nodes.Single(n => string.Equals(n.Url, "url1"));
@@ -45,7 +45,7 @@ namespace WebCrawler.Tests
             graph.AddNodes("url1", new[] {"url2"});
             graph.AddNodes("url2", new [] {"url1"});
 
-            var nodes = graph.GetAllNodes();
+            var nodes = graph.NodesByUrl.Values;
             Assert.AreEqual(2, nodes.Count);
 
             var firstNode = nodes.Single(n => string.Equals(n.Url, "url1"));

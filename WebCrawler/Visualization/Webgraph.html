@@ -58,7 +58,14 @@
       }
   }
 
+  var clusteringOptions = {
+      joinCondition: function (nodeOptions) {
+          return nodeOptions.group === "-1";
+      }
+  }
+
   var network = new vis.Network(container, data, options);
+  network.clustering.cluster(clusteringOptions);
 </script>
 
 </body>

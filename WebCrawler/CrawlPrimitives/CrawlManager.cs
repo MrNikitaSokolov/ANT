@@ -51,34 +51,93 @@ namespace WebCrawler
             }
         }
 
-        private void graphNodeAdded(object sender, WebGraphNodesCount e)
+        public void CalculateDiameter()
+        {
+            if (!_crawlCompleted)
+                return;
+
+            Console.WriteLine("Calculating diameter...");
+            var floydWarshall = new FloydWarshallDiameter();
+            var diameter = floydWarshall.GetDiameter(_graph);
+
+            Console.WriteLine("Diameter is {0}.", diameter);
+        }
+
+        public void CalculateStronglyConnectedComponents(bool showConsoleInfo = true)
+        {
+            if (!_crawlCompleted)
+                return;
+
+            if (showConsoleInfo)
+                Console.WriteLine("Calculating strongly connected components...");
+
+            var tarjanAlgo = new TarjanStronglyConnectedComponents();
+            var scc = tarjanAlgo.GetStronglyConnectedComponents(_graph);
+
+            foreach (var group in scc.Where(c => c.Count <= 1))
+            {
+                _graph.NodesByUrl[group.Single().Url].StronglyConnectedComponentIndex = -1;
+            }
+
+            if (showConsoleInfo)
+            {
+                var groupByLowlink = _graph.NodesByUrl.Values.Where(n => n.StronglyConnectedComponentIndex != -1)
+                .GroupBy(n => n.StronglyConnectedComponentIndex)
+                .ToDictionary(item => item.Key, item => item.ToArray());
+                var groupCounter = 1;
+                foreach (var group in groupByLowlink)
+                {
+                    Console.WriteLine("Group {0}:", groupCounter++);
+                    foreach (var node in group.Value)
+                    {
+                        Console.WriteLine(node.Url);
+                    }
+                }
+            }
+        }
+
+        public void Visualize()
+        {
+            if (!_crawlCompleted)
+                return;
+
+            Console.WriteLine("Opening corresponding visualization...");
+            CalculateStronglyConnectedComponents(false);
+
+            createJsonRepresentation();
+            System.Diagnostics.Process.Start(@"Visualization\Webgraph.html");
+        }
+
+        private void graphNodeAdded(object sender, EventArgs e)
         {
             if (_crawlCompleted)
                 return;
 
-            Console.Write("\r{0}", e.NumberOfNodes + " processed.");
-            if (e.NumberOfNodes < _maximumNodesCount)
+            var graph = sender as WebGraph;
+            if (graph == null)
+                throw new InvalidOperationException();
+            var numberOfCollectedNodes = graph.NodesByUrl.Values.Count;
+
+            Console.Write("\r{0}", numberOfCollectedNodes + " processed.");
+            if (numberOfCollectedNodes < _maximumNodesCount)
                 return;
 
             _crawlCompleted = true;
             _cancelToken.Cancel();
-            Console.WriteLine("Crawling is finished. Saving nodes and edges to files...");
-            createJsonRepresentation();
-            Console.WriteLine("Saving completed sucessfully.");
-            Console.WriteLine("Opening corresponding visualization...");
-            System.Diagnostics.Process.Start(@"Visualization\Webgraph.html");
+            Console.Write("\r{0}", "Crawling is finished.");
         }
 
         private void createJsonRepresentation()
         {
             var nodes = new List<NodeRepresentation>();
             var edges = new List<EdgeRepresentation>();
-            foreach (var node in _graph.GetAllNodes())
+            foreach (var node in _graph.NodesByUrl.Values)
             {
                 nodes.Add(new NodeRepresentation
                 {
                     Id = node.Url,
-                    Label = node.Url
+                    Label = node.Url,
+                    Group = node.StronglyConnectedComponentIndex.ToString()
                 });
 
                 edges.AddRange(node.Children.Select(child => new EdgeRepresentation
@@ -113,6 +172,10 @@ namespace WebCrawler
             [DataMember]
             [JsonProperty("label")]
             public string Label { get; set; }
+
+            [DataMember]
+            [JsonProperty("group")]
+            public string Group { get; set; }
         }
 
         [DataContract]

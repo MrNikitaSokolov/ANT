@@ -61,5 +61,7 @@ namespace WebCrawler
         /// Flag to show if the search was performed from this node
         /// </summary>
         public bool IsProcessed { get; private set; }
+
+        public int? StronglyConnectedComponentIndex { get; set; }
     }
 }
