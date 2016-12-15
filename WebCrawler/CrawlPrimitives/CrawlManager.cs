@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Threading;
+using MathNet.Numerics;
 using Newtonsoft.Json;
 
 namespace WebCrawler
@@ -51,9 +52,9 @@ namespace WebCrawler
             }
         }
 
-        public void CalculateDiameter()
+        private void calculateDiameter()
         {
-            if (!_crawlCompleted)
+            if (_graph.NodesByUrl.Values.Count > 2000)
                 return;
 
             Console.WriteLine("Calculating diameter...");
@@ -63,13 +64,9 @@ namespace WebCrawler
             Console.WriteLine("Diameter is {0}.", diameter);
         }
 
-        public void CalculateStronglyConnectedComponents(bool showConsoleInfo = true)
+        private void calculateStronglyConnectedComponents()
         {
-            if (!_crawlCompleted)
-                return;
-
-            if (showConsoleInfo)
-                Console.WriteLine("Calculating strongly connected components...");
+            Console.WriteLine("Calculating strongly connected components...");
 
             var tarjanAlgo = new TarjanStronglyConnectedComponents();
             var scc = tarjanAlgo.GetStronglyConnectedComponents(_graph);
@@ -79,33 +76,60 @@ namespace WebCrawler
                 _graph.NodesByUrl[group.Single().Url].StronglyConnectedComponentIndex = -1;
             }
 
-            if (showConsoleInfo)
-            {
-                var groupByLowlink = _graph.NodesByUrl.Values.Where(n => n.StronglyConnectedComponentIndex != -1)
+            var groupByLowlink = _graph.NodesByUrl.Values.Where(n => n.StronglyConnectedComponentIndex != -1)
                 .GroupBy(n => n.StronglyConnectedComponentIndex)
                 .ToDictionary(item => item.Key, item => item.ToArray());
-                var groupCounter = 1;
-                foreach (var group in groupByLowlink)
+            var groupCounter = 1;
+            foreach (var group in groupByLowlink)
+            {
+                Console.WriteLine("Group {0}:", groupCounter++);
+                foreach (var node in group.Value)
                 {
-                    Console.WriteLine("Group {0}:", groupCounter++);
-                    foreach (var node in group.Value)
-                    {
-                        Console.WriteLine(node.Url);
-                    }
+                    Console.WriteLine(node.Url);
                 }
             }
         }
 
-        public void Visualize()
+        private void visualize()
         {
-            if (!_crawlCompleted)
-                return;
-
             Console.WriteLine("Opening corresponding visualization...");
-            CalculateStronglyConnectedComponents(false);
-
             createJsonRepresentation();
             System.Diagnostics.Process.Start(@"Visualization\Webgraph.html");
+        }
+
+        private void inAndOutDegrees()
+        {
+            var nodesCountByInDegree = new Dictionary<int, int>();
+            var nodesCountByOutDegree = new Dictionary<int, int>();
+            foreach (var node in _graph.NodesByUrl.Values)
+            {
+                int currentCount;
+                nodesCountByInDegree.TryGetValue(node.Parents.Count, out currentCount);
+                nodesCountByInDegree[node.Parents.Count] = currentCount + 1;
+
+                nodesCountByOutDegree.TryGetValue(node.Children.Count, out currentCount);
+                nodesCountByOutDegree[node.Children.Count] = currentCount + 1;
+            }
+
+            var pointListIn = nodesCountByInDegree
+                .Where(entry => entry.Key != 0)
+                .Select(entry => new Point { X = entry.Key, Y = entry.Value})
+                .ToList();
+
+            var x = pointListIn.Select(p => Math.Log(p.X)).ToArray();
+            var y = pointListIn.Select(p => Math.Log(p.Y)).ToArray();
+            var w = Fit.LinearCombination(x, y, d => 1, d => d);
+            Console.WriteLine("Function for indegree is: n = {0}*indegree^{1}", w[0], w[1]);
+
+            var pointListOut = nodesCountByOutDegree
+                .Where(entry => entry.Key != 0)
+                .Select(entry => new Point { X = entry.Key, Y = entry.Value })
+                .ToList();
+
+            x = pointListOut.Select(p => Math.Log(p.X)).ToArray();
+            y = pointListOut.Select(p => Math.Log(p.Y)).ToArray();
+            w = Fit.LinearCombination(x, y, d => 1, d => d);
+            Console.WriteLine("Function for outdegree is: n = {0}*outdegree^{1}", w[0], w[1]);
         }
 
         private void graphNodeAdded(object sender, EventArgs e)
@@ -122,9 +146,14 @@ namespace WebCrawler
             if (numberOfCollectedNodes < _maximumNodesCount)
                 return;
 
+            Console.Write("\r{0}\n", "Crawling is finished. Analyzing...");
+            calculateDiameter();
+            inAndOutDegrees();
+            calculateStronglyConnectedComponents();
+            visualize();
+
             _crawlCompleted = true;
             _cancelToken.Cancel();
-            Console.Write("\r{0}", "Crawling is finished.");
         }
 
         private void createJsonRepresentation()
@@ -198,6 +227,12 @@ namespace WebCrawler
             [JsonProperty("arrows")]
             public string Arrows { get; set; }
 
+        }
+
+        public class Point
+        {
+            public int X { get; set; }
+            public int Y { get; set; }
         }
 
         private readonly CrawlWorker[] _workers;

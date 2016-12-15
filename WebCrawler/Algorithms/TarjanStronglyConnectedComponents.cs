@@ -8,10 +8,11 @@ namespace WebCrawler
     {
         public IReadOnlyCollection<IReadOnlyCollection<WebGraphNode>> GetStronglyConnectedComponents(WebGraph graph)
         {
-            foreach (var node in graph.NodesByUrl.Values.Select(n => new SpecialNode(n)))
+            var dict = graph.NodesByUrl.Values.ToDictionary(n => n.Url, n => new SpecialNode(n));
+            foreach (var node in dict.Values)
             {
                 if (node.Index == null)
-                    strongConnect(graph.NodesByUrl.Values.ToDictionary(n => n.Url, n => new SpecialNode(n)), node);
+                    strongConnect(dict, node);
             }
             return _scc;
         }
@@ -46,7 +47,7 @@ namespace WebCrawler
                 {
                     w = _stack.Pop();
                     group.Add(w.Node);
-                } while (w.Node.Url != node.Node.Url);
+                } while (!string.Equals(w.Node.Url, node.Node.Url, StringComparison.InvariantCultureIgnoreCase));
                 _scc.Add(group.ToArray());
             }
         }

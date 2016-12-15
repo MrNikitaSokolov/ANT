@@ -35,12 +35,12 @@ namespace WebCrawler
                     if (token.IsCancellationRequested)
                         return;
 
-                    await crawlIteration().ConfigureAwait(false);
+                    await CrawlIteration().ConfigureAwait(false);
                 }
             }, token).ConfigureAwait(false);
         }
 
-        private async Task crawlIteration()
+        private async Task CrawlIteration()
         {
             string link;
             if (tryGetNewLink(out link))
